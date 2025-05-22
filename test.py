@@ -39,28 +39,28 @@ def recording():
 def processing():
     torch.cuda.empty_cache()# GPU
     Audio2TXT = whisper.load_model("turbo")
-    model_path = "nllb-600m"
+    model_path = "nllb-200-distilled-600M"
     tokenizer = AutoTokenizer.from_pretrained(model_path)
     nllb = AutoModelForSeq2SeqLM.from_pretrained(model_path).cuda()
     tgt_language = "zho_Hans" 
+    src_language='deu_Latn'
     translator=pipeline('translation',
                      model=nllb,
                      tokenizer=tokenizer,
-                     src_language='deu_Latn',
-                     tgt_language=tgt_language,
-                     max_length=512
+                     max_length=512,
+                     device=0
     )
 
     while True:
         audio = q.get()
         result = Audio2TXT.transcribe(audio, fp16=False)
         if result['text'].strip():
-                translated_text=translator(result['text'])
+                translated_text=translator(result['text'],src_lang=src_language, tgt_lang=tgt_language)
                 print(f": {result['text']}\n{translated_text[0]['translation_text']}")
 
 
 t1 = threading.Thread(target=recording)
-t2 = threading.Thread(traget=processing)
+t2 = threading.Thread(target=processing)
 t1.start()
 t2.start()
 
